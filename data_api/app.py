@@ -85,7 +85,27 @@ def internal_get_class_scores():
 
     return jsonify([dict(r) for r in rows]), 200
 
+@app.route("/internal/check_assistant_class", methods=["POST"])
+def internal_check_assistant_class():
+    err = require_gateway_key()
+    if err:
+        return err
 
+    body = request.get_json(silent=True) or {}
+    assistant_id = body.get("assistant_id")
+    class_name = body.get("class")
+
+    if not assistant_id or not class_name:
+        return jsonify({"error": "missing params"}), 400
+
+    conn = get_db()
+    row = conn.execute(
+        "SELECT 1 FROM assistant_classes WHERE assistant_id = ? AND class = ?",
+        (assistant_id, class_name),
+    ).fetchone()
+    conn.close()
+
+    return jsonify({"allowed": row is not None}), 200
 @app.route("/internal/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"}), 200
